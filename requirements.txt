@@ -1,2 +1,2 @@
 six==1.11.0
-midi==0.2.3
+git+https://github.com/vishnubob/python-midi.git
