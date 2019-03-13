@@ -1,2 +1,2 @@
 six==1.11.0
-git+https://github.com/vishnubob/python-midi.git
+git+https://github.com/louisabraham/python3-midi.git
