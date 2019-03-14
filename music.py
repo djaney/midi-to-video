@@ -111,15 +111,15 @@ def generate_track_plan(event_map, video_map, resolution, max_ticks, initial_tem
 
         currently_playing_timeline.append(list(notes_currently_playing.keys()))
 
-    # for p in currently_playing_timeline:
-    #     print(p)
-    # for p in plan:
-    #     current_tick, seconds_in_track, note, octave, duration = p
-    #     if duration == 0:
-    #         duration = "sustain"
-    #         print("{} [{:.4f}] Play {}{} {}".format(current_tick, seconds_in_track, note, octave, duration))
-    #     else:
-    #         print("{} [{:.4f}] Play {}{} for {:.4f} seconds".format(current_tick, seconds_in_track, note, octave, duration))
+    for p in currently_playing_timeline:
+        print(p)
+    for p in plan:
+        current_tick, seconds_in_track, note, octave, duration = p
+        if duration == 0:
+            duration = "sustain"
+            print("{} [{:.4f}] Play {}{} {}".format(current_tick, seconds_in_track, note, octave, duration))
+        else:
+            print("{} [{:.4f}] Play {}{} for {:.4f} seconds".format(current_tick, seconds_in_track, note, octave, duration))
 
 
 def get_note_key(note, octave, channel):
