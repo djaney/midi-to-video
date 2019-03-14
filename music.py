@@ -103,11 +103,11 @@ def generate_track_plan(event_map, resolution, max_ticks, initial_tempo):
                 note, octave = value_to_note(event.get_pitch())
                 seconds_in_track = seconds_per_tick * current_tick
                 plan.append((seconds_in_track, note, octave, 0))
-                key = "{}{}".format(note, octave)
+                key = "{}{}-{}".format(note, octave, event.channel)
                 notes_currently_playing[key] = len(plan) - 1
             elif type(event) is midi.NoteOffEvent:
                 note, octave = value_to_note(event.get_pitch())
-                key = "{}{}".format(note, octave)
+                key = "{}{}-{}".format(note, octave, event.channel)
                 current_seconds_in_track = seconds_per_tick * current_tick
                 if key in notes_currently_playing:
                     note_index = notes_currently_playing[key]
