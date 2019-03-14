@@ -88,11 +88,14 @@ def generate_track_plan(event_map, resolution, max_ticks, initial_tempo):
     plan = []
     notes_currently_playing = {}
     seconds_per_tick = calculate_seconds_per_tick(initial_tempo, resolution)
+    max_stack = 0
     for current_tick in range(max_ticks):
         if current_tick not in event_map:
             continue
 
+
         events = event_map[current_tick]
+        max_stack = max(len(events), max_stack)
         for event in events:
             if type(event) is midi.TrackNameEvent:
                 track_name = event.text
