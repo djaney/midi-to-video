@@ -165,7 +165,28 @@ def create_video(size, plan, timeline, video_map, notification_callback=None, en
     else:
         # time of last frame
         end_time = plan[-1][1]
-    for current_tick, seconds_in_track, note, octave, duration, velocity in plan:
+
+    look_ahead = 0
+    for plan_key, (current_tick, seconds_in_track, note, octave, duration, velocity) in enumerate(plan):
+        # lookahead is used to detect events with the same ticks
+        # group them together in the video
+        look_ahead_group_size = 0
+        if look_ahead == 0:
+            look_tick = current_tick
+            for look_p in plan[plan_key+1:]:
+                if look_tick == look_p[0]:
+                    look_ahead += 1
+                else:
+                    break
+            if look_ahead > 0:
+                # This is the size of the group of videos
+                look_ahead_group_size = look_ahead + 1
+        else:
+            look_ahead -= 1
+
+        # of lookahead > 0 then it's still a part of the group
+
+
 
         if start is not None and seconds_in_track < start:
             continue
