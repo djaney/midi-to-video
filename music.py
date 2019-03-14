@@ -3,7 +3,7 @@ import argparse
 import midi
 from midi import constants
 import math
-import time
+import os
 
 
 def value_to_note(value):
@@ -84,7 +84,7 @@ def calculate_seconds_per_tick(tempo, resolution):
     return 60 * 1000000 / tempo / resolution / 1000000
 
 
-def generate_track_plan(event_map, resolution, max_ticks, initial_tempo):
+def generate_track_plan(event_map, video_map, resolution, max_ticks, initial_tempo):
     plan = []
     notes_currently_playing = {}
     currently_playing_timeline = []
@@ -109,17 +109,17 @@ def generate_track_plan(event_map, resolution, max_ticks, initial_tempo):
                     turn_off_note(note, octave, event.channel, seconds_per_tick, current_tick, plan,
                                   notes_currently_playing)
 
-            currently_playing_timeline.append(list(notes_currently_playing.keys()))
+        currently_playing_timeline.append(list(notes_currently_playing.keys()))
 
-    for p in currently_playing_timeline:
-        print(p)
-    for p in plan:
-        current_tick, seconds_in_track, note, octave, duration = p
-        if duration == 0:
-            duration = "sustain"
-            print("{} [{:.4f}] Play {}{} {}".format(current_tick, seconds_in_track, note, octave, duration))
-        else:
-            print("{} [{:.4f}] Play {}{} for {:.4f} seconds".format(current_tick, seconds_in_track, note, octave, duration))
+    # for p in currently_playing_timeline:
+    #     print(p)
+    # for p in plan:
+    #     current_tick, seconds_in_track, note, octave, duration = p
+    #     if duration == 0:
+    #         duration = "sustain"
+    #         print("{} [{:.4f}] Play {}{} {}".format(current_tick, seconds_in_track, note, octave, duration))
+    #     else:
+    #         print("{} [{:.4f}] Play {}{} for {:.4f} seconds".format(current_tick, seconds_in_track, note, octave, duration))
 
 
 def get_note_key(note, octave, channel):
@@ -151,10 +151,25 @@ def turn_off_note(note, octave, channel, seconds_per_tick, current_tick, plan, n
         notes_currently_playing.pop(key)
 
 
+def map_videos(video_dir):
+    video_map = {}
+    for n in range(128):
+        note, oct = value_to_note(n)
+        note_name = "{}{}".format(note, oct)
+
+        path = None
+        for file_type in ['mp4', 'avi']:
+            if os.path.isfile("{}/{}{}.{}".format(video_dir, note, oct, file_type)):
+                path = "{}/{}{}.{}".format(video_dir, note, oct, file_type)
+            if os.path.isfile("{}/{}.{}".format(video_dir, note, file_type)):
+                path = "{}/{}.{}".format(video_dir, note, file_type)
+
+        video_map[note_name] = path
+    return video_map
+
 def main(args):
     pattern = midi.read_midifile(args.midi_path)
-    resolution = pattern.resolution
-
+    video_map = map_videos(args.video_dir)
     if not args.track:
         print(get_track_names(pattern))
     else:
@@ -162,11 +177,12 @@ def main(args):
         max_ticks, resolution, initial_tempo = analyze_midi(pattern)
         track = grab_track_by_name(pattern, args.track)
         event_map = map_events_by_tick(track)
-        generate_track_plan(event_map, resolution, max_ticks, initial_tempo)
+        generate_track_plan(event_map, video_map, resolution, max_ticks, initial_tempo)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Process some integers.')
     parser.add_argument('midi_path', type=str)
     parser.add_argument('--track', type=str, default='')
+    parser.add_argument('--video_dir', type=str, default='videos')
     main(parser.parse_args())
