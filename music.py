@@ -87,45 +87,68 @@ def calculate_seconds_per_tick(tempo, resolution):
 def generate_track_plan(event_map, resolution, max_ticks, initial_tempo):
     plan = []
     notes_currently_playing = {}
+    currently_playing_timeline = []
     seconds_per_tick = calculate_seconds_per_tick(initial_tempo, resolution)
     max_stack = 0
     for current_tick in range(max_ticks):
-        if current_tick not in event_map:
-            continue
+        if current_tick in event_map:
+            events = event_map[current_tick]
+            max_stack = max(len(events), max_stack)
+            for event in events:
+                if type(event) is midi.TrackNameEvent:
+                    track_name = event.text
+                    print(track_name)
+                elif type(event) is midi.SetTempoEvent:
+                    seconds_per_tick = calculate_seconds_per_tick(event.get_bpm(), resolution)
+                elif type(event) is midi.NoteOnEvent:
+                    note, octave = value_to_note(event.get_pitch())
+                    turn_on_note(note, octave, event.channel, seconds_per_tick, current_tick, plan,
+                                 notes_currently_playing)
+                elif type(event) is midi.NoteOffEvent:
+                    note, octave = value_to_note(event.get_pitch())
+                    turn_off_note(note, octave, event.channel, seconds_per_tick, current_tick, plan,
+                                  notes_currently_playing)
 
+            currently_playing_timeline.append(list(notes_currently_playing.keys()))
 
-        events = event_map[current_tick]
-        max_stack = max(len(events), max_stack)
-        for event in events:
-            if type(event) is midi.TrackNameEvent:
-                track_name = event.text
-                print(track_name)
-            elif type(event) is midi.SetTempoEvent:
-                seconds_per_tick = calculate_seconds_per_tick(event.get_bpm(), resolution)
-            elif type(event) is midi.NoteOnEvent:
-                note, octave = value_to_note(event.get_pitch())
-                seconds_in_track = seconds_per_tick * current_tick
-                plan.append((seconds_in_track, note, octave, 0))
-                key = "{}{}-{}".format(note, octave, event.channel)
-                notes_currently_playing[key] = len(plan) - 1
-            elif type(event) is midi.NoteOffEvent:
-                note, octave = value_to_note(event.get_pitch())
-                key = "{}{}-{}".format(note, octave, event.channel)
-                current_seconds_in_track = seconds_per_tick * current_tick
-                if key in notes_currently_playing:
-                    note_index = notes_currently_playing[key]
-                    seconds_in_track, note, octave, duration = plan[note_index]
-                    duration = current_seconds_in_track - seconds_in_track
-                    plan[note_index] = (seconds_in_track, note, octave, duration)
-                    del notes_currently_playing[key]
+    for p in currently_playing_timeline:
+        print(p)
     for p in plan:
-        seconds_in_track, note, octave, duration = p
+        current_tick, seconds_in_track, note, octave, duration = p
         if duration == 0:
             duration = "sustain"
-            print("[{:.4f}] Play {}{} {}".format(seconds_in_track, note, octave, duration))
+            print("{} [{:.4f}] Play {}{} {}".format(current_tick, seconds_in_track, note, octave, duration))
         else:
-            print("[{:.4f}] Play {}{} for {:.4f} seconds".format(seconds_in_track, note, octave, duration))
+            print("{} [{:.4f}] Play {}{} for {:.4f} seconds".format(current_tick, seconds_in_track, note, octave, duration))
 
+
+def get_note_key(note, octave, channel):
+    return "{}{}-{}".format(note, octave, channel)
+
+
+def turn_on_note(note, octave, channel, seconds_per_tick, current_tick, plan, notes_currently_playing):
+    seconds_in_track = seconds_per_tick * current_tick
+    key = get_note_key(note, octave, channel)
+
+    # turn off not if already playing
+    if key in notes_currently_playing:
+        note_index = notes_currently_playing[key]
+        t, s, n, o, d = plan[note_index]
+        turn_off_note(n, o, channel, seconds_per_tick, current_tick, plan, notes_currently_playing)
+
+    plan.append((current_tick, seconds_in_track, note, octave, 0))
+    notes_currently_playing[key] = len(plan) - 1
+
+
+def turn_off_note(note, octave, channel, seconds_per_tick, current_tick, plan, notes_currently_playing):
+    key = get_note_key(note, octave, channel)
+    current_seconds_in_track = seconds_per_tick * current_tick
+    if key in notes_currently_playing:
+        note_index = notes_currently_playing[key]
+        current_tick, seconds_in_track, note, octave, duration = plan[note_index]
+        duration = current_seconds_in_track - seconds_in_track
+        plan[note_index] = (current_tick, seconds_in_track, note, octave, duration)
+        notes_currently_playing.pop(key)
 
 
 def main(args):
