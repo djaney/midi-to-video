@@ -6,6 +6,7 @@ import math
 import os
 from moviepy.editor import CompositeVideoClip, VideoFileClip, clips_array, vfx
 
+FADE_TIME = 0.3
 
 def value_to_note(value):
     noteidx = value % constants.NOTE_PER_OCTAVE
@@ -212,8 +213,22 @@ def create_video(size, plan, timeline, video_map, notification_callback=None, en
 
             clip = VideoFileClip(video_map[video_key])
             if duration > 0:
-                clip = clip.subclip(0, duration)
-                clip = clip.resize(size)
+                # cut if not sustain
+                if duration >= FADE_TIME > 0:
+                    # if duration is long enough, add fade
+                    audio = clip.audio
+                    audio = audio.subclip(0, duration)
+                    clip.set_audio(audio)
+                    clip = clip.subclip(0, duration+FADE_TIME)
+                    clip = clip.crossfadeout(FADE_TIME)
+                else:
+                    # otherwise, just cut it
+                    clip = clip.subclip(0, duration)
+            else:
+                # fade out if sustain
+                clip = clip.crossfadeout(FADE_TIME)
+
+            clip = clip.resize(size)
             clip = clip.set_start(clip_start)
 
 
