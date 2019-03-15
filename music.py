@@ -6,7 +6,6 @@ import math
 import os
 from moviepy.editor import CompositeVideoClip, VideoFileClip, clips_array, vfx
 
-FADE_TIME = 0.3
 
 def value_to_note(value):
     noteidx = value % constants.NOTE_PER_OCTAVE
@@ -154,7 +153,8 @@ def map_videos(video_dir):
     return video_map
 
 
-def create_video(size, plan, video_map, notification_callback=None, end=None, start=None):
+def create_video(size, plan, video_map, notification_callback=None, end=None, start=None, combine_threashold=0,
+                 fade_time = 0):
     clips = []
     if end is not None and end < len(plan):
         end_time = end
@@ -176,7 +176,7 @@ def create_video(size, plan, video_map, notification_callback=None, end=None, st
         if look_ahead == 0:
             look_tick = current_tick
             for look_p in plan[plan_key+1:]:
-                if look_tick == look_p[0]:
+                if abs(look_tick - look_p[0]) < combine_threashold:
                     look_ahead += 1
                 else:
                     break
@@ -209,19 +209,19 @@ def create_video(size, plan, video_map, notification_callback=None, end=None, st
             clip = VideoFileClip(video_map[video_key])
             if duration > 0:
                 # cut if not sustain
-                if duration >= FADE_TIME > 0:
+                if duration >= fade_time > 0:
                     # if duration is long enough, add fade
                     audio = clip.audio
                     audio = audio.subclip(0, duration)
                     clip.set_audio(audio)
-                    clip = clip.subclip(0, duration+FADE_TIME)
-                    clip = clip.crossfadeout(FADE_TIME)
+                    clip = clip.subclip(0, duration+fade_time)
+                    clip = clip.crossfadeout(fade_time)
                 else:
                     # otherwise, just cut it
                     clip = clip.subclip(0, duration)
             else:
                 # fade out if sustain
-                clip = clip.crossfadeout(FADE_TIME)
+                clip = clip.crossfadeout(fade_time)
 
             clip = clip.resize(size)
             clip = clip.set_start(clip_start)
@@ -264,7 +264,7 @@ def main(args):
         event_map = map_events_by_tick(track)
         plan = generate_track_plan(event_map, resolution, total_ticks, initial_tempo)
         video = create_video((360, 240), plan, video_map, notification_callback=loader,
-                             end=args.end, start=args.start)
+                             end=args.end, start=args.start, combine_threashold=args.combine_tick_threshold, fade_time=args.fade_time)
         # save
         video.write_videofile(args.output)
 
@@ -277,4 +277,6 @@ if __name__ == "__main__":
     parser.add_argument('--output', '-o', type=str, default='output.mp4')
     parser.add_argument('--start', '-s', type=int, default=None)
     parser.add_argument('--end', '-e', type=int, default=None)
+    parser.add_argument('--fade_time', type=float, default=.03)
+    parser.add_argument('--combine_tick_threshold', type=int, default=100)
     main(parser.parse_args())
