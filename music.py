@@ -33,16 +33,14 @@ def analyze_midi(pattern):
     return max_ticks, pattern.resolution, initial_tempo
 
 
-def grab_track_by_name(pattern, name):
+def grab_track_by_index(pattern, index):
     """
     :param pattern:
     :param name:
     :return: track
     """
-    for track in pattern:
-        for event in track:
-            if type(event) is midi.TrackNameEvent and event.text == name:
-                return track
+    if index < len(pattern):
+        return pattern[index]
     return None
 
 
@@ -257,12 +255,15 @@ def loader(current, total):
 def main(args):
     pattern = midi.read_midifile(args.midi_path)
     video_map = map_videos(args.video_dir)
-    if not args.track:
+    if args.track <= 0:
         print(get_track_names(pattern))
     else:
 
         total_ticks, resolution, initial_tempo = analyze_midi(pattern)
-        track = grab_track_by_name(pattern, args.track)
+        track = grab_track_by_index(pattern, args.track)
+
+        print(get_track_names(pattern)[args.track - 1])
+
         event_map = map_events_by_tick(track)
         plan, timeline = generate_track_plan(event_map, resolution, total_ticks, initial_tempo)
         video = create_video((360, 240), plan, timeline, video_map, notification_callback=loader,
@@ -274,7 +275,7 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Process some integers.')
     parser.add_argument('midi_path', type=str)
-    parser.add_argument('--track', '-t', type=str, default='')
+    parser.add_argument('--track', '-t', type=int, default=-1)
     parser.add_argument('--video_dir', '-d', type=str, default='videos')
     parser.add_argument('--output', '-o', type=str, default='output.mp4')
     parser.add_argument('--start', '-s', type=int, default=None)
