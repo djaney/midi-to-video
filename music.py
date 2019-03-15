@@ -211,23 +211,24 @@ def create_video(size, plan, timeline, video_map, notification_callback=None, en
                 clip_start = 0
 
             clip = VideoFileClip(video_map[video_key])
-            clip = clip.subclip(0, duration)
+            if duration > 0:
+                clip = clip.subclip(0, duration)
             clip = clip.set_start(clip_start)
 
 
             # part of a group
             if look_ahead_index != 0 or look_ahead_group_size != 0:
-                row_width = math.floor(size[0]/look_ahead_group_size*look_ahead_index)
+                row_width = math.floor(size[0]/look_ahead_group_size)
                 x1 = math.floor((size[0]/2) - (row_width/2))
                 clip = vfx.crop(clip, x1=x1, width=row_width)
-                clip = clip.set_pos((row_width, 0))
+                clip = clip.set_pos((row_width*look_ahead_index, 0))
 
             clips.append(clip)
             notification_callback(seconds_in_track, end_time)
             if end is not None and end_time <= seconds_in_track:
                 break
 
-    return CompositeVideoClip(clips, size=size)
+    return CompositeVideoClip(clips, bg_color=(0, 0, 255), size=size)
 
 
 def loader(current, total):
