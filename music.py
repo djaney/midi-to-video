@@ -240,15 +240,18 @@ def create_video(size, plan, timeline, video_map, notification_callback=None, en
                 clip = clip.set_pos((row_width*look_ahead_index, 0))
 
             clips.append(clip)
-            notification_callback(seconds_in_track, end_time)
+            notification_callback(seconds_in_track if start is None else math.floor(seconds_in_track-start),
+                                  end_time if start is None else math.floor(end_time - start))
             if end is not None and end_time <= seconds_in_track:
                 break
 
-    return CompositeVideoClip(clips, bg_color=(0, 0, 255), size=size)
+    composite = CompositeVideoClip(clips, bg_color=(0, 0, 255), size=size)
+
+    return composite
 
 
 def loader(current, total):
-    print("{}/{}".format(current, total))
+    print("{:.02f}%".format(current / total * 100))
 
 
 def main(args):
