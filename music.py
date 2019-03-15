@@ -239,7 +239,7 @@ def create_video(size, plan, video_map, notification_callback=None, end=None, st
                     clip.set_audio(audio)
                     clip = clip.subclip(0, duration+fade_time)
                     clip = clip.crossfadeout(fade_time)
-                else:
+                elif clip.duration < duration:
                     # otherwise, just cut it
                     clip = clip.subclip(0, duration)
             else:
