@@ -87,7 +87,6 @@ def calculate_seconds_per_tick(tempo, resolution):
 def generate_track_plan(event_map, resolution, max_ticks, initial_tempo):
     plan = []
     notes_currently_playing = {}
-    currently_playing_timeline = []
     seconds_per_tick = calculate_seconds_per_tick(initial_tempo, resolution)
     max_stack = 0
     for current_tick in range(max_ticks):
@@ -106,9 +105,7 @@ def generate_track_plan(event_map, resolution, max_ticks, initial_tempo):
                     turn_off_note(note, octave, event.channel, seconds_per_tick, current_tick, plan,
                                   notes_currently_playing)
 
-        currently_playing_timeline.append(list(notes_currently_playing.keys()))
-
-    return plan, currently_playing_timeline
+    return plan
 
 
 def get_note_key(note, octave, channel):
@@ -157,7 +154,7 @@ def map_videos(video_dir):
     return video_map
 
 
-def create_video(size, plan, timeline, video_map, notification_callback=None, end=None, start=None):
+def create_video(size, plan, video_map, notification_callback=None, end=None, start=None):
     clips = []
     if end is not None and end < len(plan):
         end_time = end
@@ -265,8 +262,8 @@ def main(args):
         print(get_track_names(pattern)[args.track - 1])
 
         event_map = map_events_by_tick(track)
-        plan, timeline = generate_track_plan(event_map, resolution, total_ticks, initial_tempo)
-        video = create_video((360, 240), plan, timeline, video_map, notification_callback=loader,
+        plan = generate_track_plan(event_map, resolution, total_ticks, initial_tempo)
+        video = create_video((360, 240), plan, video_map, notification_callback=loader,
                              end=args.end, start=args.start)
         # save
         video.write_videofile(args.output)
