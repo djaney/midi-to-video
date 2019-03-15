@@ -213,6 +213,7 @@ def create_video(size, plan, timeline, video_map, notification_callback=None, en
             clip = VideoFileClip(video_map[video_key])
             if duration > 0:
                 clip = clip.subclip(0, duration)
+                clip = clip.resize(size)
             clip = clip.set_start(clip_start)
 
 
