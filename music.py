@@ -4,7 +4,7 @@ import midi
 from midi import constants
 import math
 import os
-from moviepy.editor import CompositeVideoClip, VideoFileClip
+from moviepy.editor import CompositeVideoClip, VideoFileClip, clips_array, vfx
 
 
 def value_to_note(value):
@@ -167,10 +167,16 @@ def create_video(size, plan, timeline, video_map, notification_callback=None, en
         end_time = plan[-1][1]
 
     look_ahead = 0
+    video_combination_pool = []
+    look_ahead_group_size = 0
     for plan_key, (current_tick, seconds_in_track, note, octave, duration, velocity) in enumerate(plan):
+
+        if start is not None and seconds_in_track < start:
+            continue
+
         # lookahead is used to detect events with the same ticks
         # group them together in the video
-        look_ahead_group_size = 0
+
         if look_ahead == 0:
             look_tick = current_tick
             for look_p in plan[plan_key+1:]:
@@ -180,16 +186,19 @@ def create_video(size, plan, timeline, video_map, notification_callback=None, en
                     break
             if look_ahead > 0:
                 # This is the size of the group of videos
-                look_ahead_group_size = look_ahead + 1
+                look_ahead += 1
+                look_ahead_group_size = look_ahead
         else:
             look_ahead -= 1
 
+        if look_ahead > 0:
+
+            look_ahead_index = look_ahead_group_size-look_ahead
+        else:
+            look_ahead_group_size = 0
+            look_ahead_index = 0
+
         # of lookahead > 0 then it's still a part of the group
-
-
-
-        if start is not None and seconds_in_track < start:
-            continue
 
         video_key = "{}{}".format(note, octave)
         if video_key in video_map:
@@ -200,7 +209,19 @@ def create_video(size, plan, timeline, video_map, notification_callback=None, en
                 clip_start = seconds_in_track
             if clip_start < 0:
                 clip_start = 0
-            clip = VideoFileClip(video_map[video_key]).subclip(0, duration).set_start(clip_start)
+
+            clip = VideoFileClip(video_map[video_key])
+            clip = clip.subclip(0, duration)
+            clip = clip.set_start(clip_start)
+
+
+            # part of a group
+            if look_ahead_index != 0 or look_ahead_group_size != 0:
+                row_width = math.floor(size[0]/look_ahead_group_size*look_ahead_index)
+                x1 = math.floor((size[0]/2) - (row_width/2))
+                clip = vfx.crop(clip, x1=x1, width=row_width)
+                clip = clip.set_pos((row_width, 0))
+
             clips.append(clip)
             notification_callback(seconds_in_track, end_time)
             if end is not None and end_time <= seconds_in_track:
