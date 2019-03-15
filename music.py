@@ -7,6 +7,8 @@ import os
 from moviepy.editor import CompositeVideoClip, VideoFileClip, concatenate_videoclips, vfx
 
 
+MIN_DURATION = 0.3
+
 def value_to_note(value):
     noteidx = value % constants.NOTE_PER_OCTAVE
     octidx = math.floor(value / constants.OCTAVE_MAX_VALUE)
@@ -221,6 +223,10 @@ def create_video(size, plan, video_map, notification_callback=None, end=None, st
                 clip_start = 0
 
             clip = VideoFileClip(video_map[video_key])
+
+            # minimum duration
+            if duration > MIN_DURATION:
+                duration = MIN_DURATION
 
             # avoid going under the clip duration
             if clip.duration < duration:
