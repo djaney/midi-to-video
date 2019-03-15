@@ -154,7 +154,7 @@ def map_videos(video_dir):
 
 
 def create_video(size, plan, video_map, notification_callback=None, end=None, start=None, combine_threashold=0,
-                 fade_time = 0):
+                 fade_time=0, volumex=2):
     clips = []
     if end is not None and end < len(plan):
         end_time = end
@@ -207,6 +207,11 @@ def create_video(size, plan, video_map, notification_callback=None, end=None, st
                 clip_start = 0
 
             clip = VideoFileClip(video_map[video_key])
+
+            # add volume via velocity
+            volume = velocity / 127 * volumex
+            clip = clip.volumex(volume)
+
             if duration > 0:
                 # cut if not sustain
                 if duration >= fade_time > 0:
@@ -264,7 +269,7 @@ def main(args):
         event_map = map_events_by_tick(track)
         plan = generate_track_plan(event_map, resolution, total_ticks, initial_tempo)
         video = create_video((360, 240), plan, video_map, notification_callback=loader,
-                             end=args.end, start=args.start, combine_threashold=args.combine_tick_threshold, fade_time=args.fade_time)
+                             end=args.end, start=args.start, combine_threashold=args.combine_tick_threshold, fade_time=args.fade_time, volumex=args.volumex)
         # save
         video.write_videofile(args.output)
 
@@ -279,4 +284,5 @@ if __name__ == "__main__":
     parser.add_argument('--end', '-e', type=int, default=None)
     parser.add_argument('--fade_time', type=float, default=.03)
     parser.add_argument('--combine_tick_threshold', type=int, default=100)
+    parser.add_argument('--volumex', type=float, default=2)
     main(parser.parse_args())
