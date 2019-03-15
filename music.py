@@ -138,16 +138,30 @@ def turn_off_note(note, octave, channel, seconds_per_tick, current_tick, plan, n
 
 def map_videos(video_dir):
     video_map = {}
+    mid = 3
     for n in range(128):
         note, oct = value_to_note(n)
         note_name = "{}{}".format(note, oct)
-
+        file_type = "mp4"
         path = None
-        for file_type in ['mp4', 'avi']:
-            if os.path.isfile("{}/{}{}.{}".format(video_dir, note, oct, file_type)):
-                path = "{}/{}{}.{}".format(video_dir, note, oct, file_type)
-            if os.path.isfile("{}/{}.{}".format(video_dir, note, file_type)):
-                path = "{}/{}.{}".format(video_dir, note, file_type)
+        if os.path.isfile("{}/{}{}.{}".format(video_dir, note, oct, file_type)):
+            path = "{}/{}{}.{}".format(video_dir, note, oct, file_type)
+        elif os.path.isfile("{}/{}.{}".format(video_dir, note, file_type)):
+            path = "{}/{}.{}".format(video_dir, note, file_type)
+        elif oct <= mid:
+            for i in range(0, mid+1):
+                if os.path.isfile("{}/{}{}.{}".format(video_dir, note, i, file_type)):
+                    path = "{}/{}{}.{}".format(video_dir, note, i, file_type)
+                    break
+        elif oct > mid:
+            for i in range(12, mid, -1):
+                if os.path.isfile("{}/{}{}.{}".format(video_dir, note, i, file_type)):
+                    path = "{}/{}{}.{}".format(video_dir, note, i, file_type)
+                    break
+
+        if path is None:
+            raise Exception("{}{} missisng".format(note, oct))
+
 
         video_map[note_name] = path
     return video_map
@@ -208,13 +222,17 @@ def create_video(size, plan, video_map, notification_callback=None, end=None, st
 
             clip = VideoFileClip(video_map[video_key])
 
+            # avoid going under the clip duration
+            if clip.duration < duration:
+                duration = clip.duration
+
             # add volume via velocity
             volume = velocity / 127 * volumex
             clip = clip.volumex(volume)
 
             if duration > 0:
                 # cut if not sustain
-                if duration >= fade_time > 0:
+                if duration >= fade_time > 0 and duration+fade_time > clip.duration:
                     # if duration is long enough, add fade
                     audio = clip.audio
                     audio = audio.subclip(0, duration)
@@ -230,7 +248,6 @@ def create_video(size, plan, video_map, notification_callback=None, end=None, st
 
             clip = clip.resize(size)
             clip = clip.set_start(clip_start)
-
 
             # part of a group
             if look_ahead_index != 0 or look_ahead_group_size != 0:
@@ -268,8 +285,12 @@ def main(args):
 
         event_map = map_events_by_tick(track)
         plan = generate_track_plan(event_map, resolution, total_ticks, initial_tempo)
-        video = create_video((360, 240), plan, video_map, notification_callback=loader,
-                             end=args.end, start=args.start, combine_threashold=args.combine_tick_threshold, fade_time=args.fade_time, volumex=args.volumex)
+        video = create_video((360, 240), plan, video_map,
+                             notification_callback=loader,
+                             end=args.end, start=args.start,
+                             combine_threashold=args.combine_tick_threshold,
+                             fade_time=args.fade_time,
+                             volumex=args.volumex)
         # save
         video.write_videofile(args.output)
 
@@ -282,7 +303,7 @@ if __name__ == "__main__":
     parser.add_argument('--output', '-o', type=str, default='output.mp4')
     parser.add_argument('--start', '-s', type=int, default=None)
     parser.add_argument('--end', '-e', type=int, default=None)
-    parser.add_argument('--fade_time', type=float, default=.03)
-    parser.add_argument('--combine_tick_threshold', type=int, default=100)
+    parser.add_argument('--fade_time', '-f', type=float, default=.03)
+    parser.add_argument('--combine_tick_threshold', '-c', type=int, default=100)
     parser.add_argument('--volumex', type=float, default=2)
     main(parser.parse_args())
