@@ -4,7 +4,7 @@ import midi
 from midi import constants
 import math
 import os
-from moviepy.editor import CompositeVideoClip, VideoFileClip, clips_array, vfx
+from moviepy.editor import CompositeVideoClip, VideoFileClip, concatenate_videoclips, vfx
 
 
 def value_to_note(value):
@@ -271,10 +271,20 @@ def loader(current, total):
     print("{:.02f}%".format(current / total * 100))
 
 
+def test_videos(video_map):
+    clips = []
+    for v in video_map.values():
+        clips.append(VideoFileClip(v))
+    video = concatenate_videoclips(clips)
+    video.write_videofile("test.mp4")
+
 def main(args):
     pattern = midi.read_midifile(args.midi_path)
     video_map = map_videos(args.video_dir)
-    if args.track <= 0:
+
+    if args.test:
+        test_videos(video_map)
+    elif args.track <= 0:
         print(get_track_names(pattern))
     else:
 
@@ -306,4 +316,5 @@ if __name__ == "__main__":
     parser.add_argument('--fade_time', '-f', type=float, default=.03)
     parser.add_argument('--combine_tick_threshold', '-c', type=int, default=100)
     parser.add_argument('--volumex', type=float, default=2)
+    parser.add_argument('--test', action='store_true')
     main(parser.parse_args())
