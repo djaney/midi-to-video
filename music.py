@@ -170,7 +170,7 @@ def map_videos(video_dir):
 
 
 def create_video(size, plan, video_map, notification_callback=None, end=None, start=None, combine_threashold=0,
-                 fade_time=0, volumex=2):
+                 fade_time=0, volumex=2, bg=(0,0,0)):
     clips = []
     if end is not None and end < len(plan):
         end_time = end
@@ -270,13 +270,23 @@ def create_video(size, plan, video_map, notification_callback=None, end=None, st
         else:
             warnings.warn("Unable to play {}, file not mapped".format(video_key))
 
-    composite = CompositeVideoClip(clips, bg_color=(0, 0, 255), size=size)
+    composite = CompositeVideoClip(clips, bg_color=bg, size=size)
 
     return composite
 
 
 def loader(current, total):
     print("{:.02f}%".format(current / total * 100))
+
+def hex_to_rgb(colorstring):
+    """ convert #RRGGBB to an (R, G, B) tuple """
+    colorstring = colorstring.strip()
+    if colorstring[0] == '#': colorstring = colorstring[1:]
+    if len(colorstring) != 6:
+        raise ValueError( "input #{} is not in #RRGGBB format".format(colorstring) )
+    r, g, b = colorstring[:2], colorstring[2:4], colorstring[4:]
+    r, g, b = [int(n, 16) for n in (r, g, b)]
+    return (r, g, b)
 
 
 def test_videos(video_map):
@@ -308,7 +318,8 @@ def main(args):
                              end=args.end, start=args.start,
                              combine_threashold=args.combine_tick_threshold,
                              fade_time=args.fade_time,
-                             volumex=args.volumex)
+                             volumex=args.volumex, 
+                             bg=hex_to_rgb(args.bg))
         # save
         video.write_videofile(args.output)
 
@@ -325,4 +336,5 @@ if __name__ == "__main__":
     parser.add_argument('--combine_tick_threshold', '-c', type=int, default=100)
     parser.add_argument('--volumex', type=float, default=2)
     parser.add_argument('--test', action='store_true')
+    parser.add_argument('--bg', default="000000", type=str)
     main(parser.parse_args())
