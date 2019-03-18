@@ -151,12 +151,12 @@ def map_videos(video_dir):
         elif os.path.isfile("{}/{}.{}".format(video_dir, note, file_type)):
             path = "{}/{}.{}".format(video_dir, note, file_type)
         elif oct <= mid:
-            for i in range(0, mid+1):
+            for i in range(oct, mid+1):
                 if os.path.isfile("{}/{}{}.{}".format(video_dir, note, i, file_type)):
                     path = "{}/{}{}.{}".format(video_dir, note, i, file_type)
                     break
         elif oct > mid:
-            for i in range(12, mid, -1):
+            for i in range(oct, mid, -1):
                 if os.path.isfile("{}/{}{}.{}".format(video_dir, note, i, file_type)):
                     path = "{}/{}{}.{}".format(video_dir, note, i, file_type)
                     break
@@ -170,7 +170,7 @@ def map_videos(video_dir):
 
 
 def create_video(size, plan, video_map, notification_callback=None, end=None, start=None, combine_threashold=0,
-                 fade_time=0, volumex=2, bg=(0,0,0)):
+                 fade_time=0, volumex=2, bg=(0,0,0), shift_octave=0):
     clips = []
     if end is not None and end < len(plan):
         end_time = end
@@ -185,6 +185,9 @@ def create_video(size, plan, video_map, notification_callback=None, end=None, st
 
         if start is not None and seconds_in_track < start:
             continue
+
+        # shift octave
+        octave += shift_octave
 
         # lookahead is used to detect events with the same ticks
         # group them together in the video
@@ -319,7 +322,8 @@ def main(args):
                              combine_threashold=args.combine_tick_threshold,
                              fade_time=args.fade_time,
                              volumex=args.volumex, 
-                             bg=hex_to_rgb(args.bg))
+                             bg=hex_to_rgb(args.bg),
+                             shift_octave=args.shift_octave)
         # save
         video.write_videofile(args.output)
 
@@ -337,4 +341,5 @@ if __name__ == "__main__":
     parser.add_argument('--volumex', type=float, default=2)
     parser.add_argument('--test', action='store_true')
     parser.add_argument('--bg', default="000000", type=str)
+    parser.add_argument('--shift_octave', default=0, type=int)
     main(parser.parse_args())
