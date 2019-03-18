@@ -5,7 +5,7 @@ from midi import constants
 import math
 import os
 from moviepy.editor import CompositeVideoClip, VideoFileClip, concatenate_videoclips, vfx
-
+import warnings
 
 MIN_DURATION = 0.3
 
@@ -161,11 +161,11 @@ def map_videos(video_dir):
                     path = "{}/{}{}.{}".format(video_dir, note, i, file_type)
                     break
 
-        if path is None:
-            raise Exception("{}{} missisng".format(note, oct))
+        if path is not None:
+            video_map[note_name] = path
+        else:
+            warnings.warn("{}{} missing, unable to map".format(note, oct), RuntimeWarning)
 
-
-        video_map[note_name] = path
     return video_map
 
 
@@ -267,6 +267,8 @@ def create_video(size, plan, video_map, notification_callback=None, end=None, st
                                   end_time if start is None else math.floor(end_time - start))
             if end is not None and end_time <= seconds_in_track:
                 break
+        else:
+            warnings.warn("Unable to play {}, file not mapped".format(video_key))
 
     composite = CompositeVideoClip(clips, bg_color=(0, 0, 255), size=size)
 
