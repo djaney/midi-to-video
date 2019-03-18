@@ -260,10 +260,22 @@ def create_video(size, plan, video_map, notification_callback=None, end=None, st
 
             # part of a group
             if look_ahead_index != 0 or look_ahead_group_size != 0:
-                row_width = math.floor(size[0]/look_ahead_group_size)
-                x1 = math.floor((size[0]/2) - (row_width/2))
-                clip = vfx.crop(clip, x1=x1, width=row_width)
-                clip = clip.set_pos((row_width*look_ahead_index, 0))
+                # determine number of rows
+                if look_ahead_group_size >= 6:
+                    row_count = 2
+                else:
+                    row_count = 1
+
+                part_width = math.floor(size[0]/math.ceil(look_ahead_group_size/row_count))
+                part_height = math.floor(size[1] /row_count)
+                x1 = math.floor((size[0]/2) - (part_width/2))
+                y1 = math.floor((size[1]/2) - (part_height/2))
+                clip = vfx.crop(clip, x1=x1, y1=y1, width=part_width, height=part_height)
+
+                clip_x = part_width*look_ahead_index
+                clip_y = part_height*math.floor(look_ahead_index/look_ahead_group_size * row_count)
+
+                clip = clip.set_pos((clip_x, clip_y))
 
             clips.append(clip)
             notification_callback(seconds_in_track if start is None else math.floor(seconds_in_track-start),
