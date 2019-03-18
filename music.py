@@ -195,7 +195,7 @@ def create_video(size, plan, video_map, notification_callback=None, end=None, st
         if look_ahead == 0:
             look_tick = current_tick
             for look_p in plan[plan_key+1:]:
-                if abs(look_tick - look_p[0]) < combine_threashold:
+                if abs(look_tick - look_p[0]) <= combine_threashold:
                     look_ahead += 1
                 else:
                     break
