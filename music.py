@@ -90,6 +90,8 @@ def calculate_seconds_per_tick(tempo, resolution):
 
 
 def generate_track_plan(event_map, resolution, max_ticks, initial_tempo):
+    if initial_tempo is None:
+        initial_tempo = 120
     plan = []
     notes_currently_playing = {}
     seconds_per_tick = calculate_seconds_per_tick(initial_tempo, resolution)
