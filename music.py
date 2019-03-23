@@ -51,11 +51,15 @@ def get_track_names(pattern):
     :return: list
     """
     names = []
-    for track in pattern:
+    for index, track in enumerate(pattern):
+        name_found = False
         for event in track:
             if type(event) is midi.TrackNameEvent:
-                names.append(event.text)
+                names.append("{} - {}".format(index, event.text))
+                name_found = True
                 break
+        if not name_found:
+            names.append("{} - Unnamed".format(index))
 
     return names
 
@@ -317,7 +321,7 @@ def main(args):
 
     if args.test:
         test_videos(video_map)
-    elif args.track <= 0:
+    elif args.track < 0:
         print(get_track_names(pattern))
     else:
 
